@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+<com.app.afrifarm.views.CameraView
+    android:id="@+id/cameraView"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+</com.app.afrifarm.views.CameraView>
+<TextureView
+    android:id="@+id/videoView"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:visibility="gone"></TextureView>
+    <androidx.recyclerview.widget.RecyclerView
+        android:id            = "@+id/imagesRecyclerView"
+        android:layout_width  = "match_parent"
+        android:layout_height = "48dp"
+        android:layout_gravity="center|bottom"
+        android:layout_marginBottom="144dp">
+
+    </androidx.recyclerview.widget.RecyclerView>
+    <View
+        android:id="@+id/shutterBtn"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="center|bottom"
+        android:layout_marginBottom="64dp"
+        android:elevation="4dp"
+        android:translationZ="4dp"
+        >
+
+    </View>
+    <ImageView
+        android:id="@+id/mapBtn"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:layout_gravity="left|bottom"
+        android:layout_marginBottom="64dp"
+        android:layout_marginLeft="32dp"
+        android:elevation="2dp"
+        android:translationZ="2dp"
+        app:ico_color="#212121"
+        app:ico_icon="faw-map2"
+        app:ico_size="42dp"
+        android:padding="8dp"></ImageView>
+
+    <ImageView
+        android:id="@+id/hisBtn"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:layout_gravity="right|bottom"
+        android:layout_marginBottom="64dp"
+        android:layout_marginRight="32dp"
+        android:elevation="2dp"
+        android:translationZ="2dp"
+        android:visibility="gone"
+        app:ico_color="#212121"
+        app:ico_icon="faw-history"
+        app:ico_size="42dp"
+        android:padding="8dp"></ImageView>
+    <FrameLayout
+        android:id="@+id/circularImageViewHolder"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:background="#fafafa">
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/progressAnimation"
+            android:layout_width="537dp"
+            android:layout_height="537dp"
+            android:alpha="0"
+            app:lottie_autoPlay="true"
+            app:lottie_loop="true"
+            android:background="#00000000"
+            app:lottie_fileName="animations/983-rejection.json"
+            android:layout_gravity="center"/>
+        <com.app.afrifarm.views.CircularImageView
+            android:id="@+id/circularImageView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:scaleType="centerCrop"/>
+
+        <TextView
+            android:id="@+id/findingTxView"
+            android:layout_width  = "wrap_content"
+            android:layout_height = "wrap_content"
+            android:textSize      = "24sp"
+            android:fontFamily      = "sans-serif-medium"
+            android:textColor     = "#212121"
+            android:text          = "Finding Diseases"
+            android:layout_gravity= "center|top"
+            android:singleLine="true"
+            android:layout_marginTop="16dp"
+            />
+
+        <TextView
+            android:id="@+id/pleaseWaitTxView"
+            android:layout_width  = "wrap_content"
+            android:layout_height = "wrap_content"
+            android:textSize      = "16sp"
+            android:fontFamily      = "sans-serif-medium"
+            android:textColor     = "#bebebe"
+            android:text          = "Please Wait"
+            android:layout_gravity= "center|top"
+            android:singleLine="true"
+            android:layout_marginTop="48dp"
+            />
+        <TextView
+            android:id="@+id/cancleBtn"
+            android:layout_width  = "wrap_content"
+            android:layout_height = "wrap_content"
+            android:textSize      = "20sp"
+            android:fontFamily      = "sans-serif-medium"
+            android:textColor     = "#212121"
+            android:text          = "Cancle"
+            android:layout_gravity= "center|bottom"
+            android:singleLine="true"
+            android:gravity="center"
+            android:padding="8dp"
+            android:layout_marginBottom="18dp"
+            />
+
+        <TextView
+            android:id="@+id/plantNameTxView"
+            android:layout_width  = "wrap_content"
+            android:layout_height = "wrap_content"
+            android:textSize      = "18sp"
+            android:fontFamily      = "sans-serif-medium"
+            android:textColor     = "#212121"
+            android:text          = ""
+            android:layout_gravity= "left|top"
+            android:singleLine="true"
+            android:layout_marginLeft="16dp"
+            android:layout_marginTop="308dp"
+            android:alpha="0"
+            />
+        <TextView
+            android:id="@+id/diseaseNameTxView"
+            android:layout_width  = "wrap_content"
+            android:layout_height = "wrap_content"
+            android:textSize      = "24sp"
+            android:fontFamily      = "sans-serif-medium"
+            android:textColor     = "#212121"
+            android:text          = ""
+            android:layout_gravity= "left|top"
+            android:singleLine="true"
+            android:layout_marginLeft="16dp"
+            android:layout_marginTop="342dp"
+            android:alpha="0"
+            />
+        <TextView
+            android:id="@+id/reportBtnTxView"
+            android:layout_width  = "wrap_content"
+            android:layout_height = "wrap_content"
+            android:textSize      = "32sp"
+            android:padding="8dp"
+            android:fontFamily      = "sans-serif-medium"
+            android:textColor     = "#2196f3"
+            android:text          = "Report"
+            android:layout_gravity= "left|bottom"
+            android:singleLine="true"
+            android:layout_marginLeft="16dp"
+            android:layout_marginBottom="16dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:alpha="0"
+            />
+    </FrameLayout>
+</FrameLayout>

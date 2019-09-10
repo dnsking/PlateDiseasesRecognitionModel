@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MapActivity">
+    <LinearLayout
+        android:layout_width  = "match_parent"
+        android:layout_height = "match_parent"
+        android:orientation   = "vertical">
+<LinearLayout
+    android:id="@+id/dateBtn"
+    android:layout_width="match_parent"
+    android:layout_height="56dp"
+    android:orientation="horizontal"
+    android:layout_marginLeft="16dp"
+    android:layout_marginRight="16dp"
+    android:gravity="center_vertical"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:clickable="true">
+    <ImageView
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:layout_marginRight="8dp"
+        android:elevation="2dp"
+        android:translationZ="2dp"
+        app:ico_color="#212121"
+        app:ico_icon="faw-calendar"
+        app:ico_size="42dp"
+        android:padding="8dp"></ImageView>
+    <TextView
+        android:id="@+id/firstDateTxtView"
+        android:layout_width  = "wrap_content"
+        android:layout_height = "wrap_content"
+        android:textSize      = "18sp"
+        android:fontFamily      = "sans-serif-black"
+        android:textColor     = "#212121"
+        android:text          = "FEB 21"
+        android:singleLine="true"
+        android:layout_marginRight="16dp"
+        />
+
+    <TextView
+        android:id="@+id/lastDateTxtView"
+        android:layout_width  = "wrap_content"
+        android:layout_height = "wrap_content"
+        android:textSize      = "18sp"
+        android:fontFamily      = "sans-serif-black"
+        android:textColor     = "#212121"
+        android:text          = "MAR 17"
+        android:singleLine="true"
+        android:layout_marginRight="16dp"
+        />
+</LinearLayout>
+        <fragment xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:map="http://schemas.android.com/apk/res-auto"
+            xmlns:tools="http://schemas.android.com/tools"
+            android:id="@+id/map"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            android:layout_width="match_parent"
+            android:layout_height="264dp"
+            map:cameraBearing="112.5"
+            map:cameraTargetLat="-33.796923"
+            map:cameraTargetLng="150.922433"
+            map:cameraTilt="30"
+            map:cameraZoom="17"
+            map:mapType="satellite"
+            />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id            = "@+id/breakoutListRecyclerView"
+            android:layout_width  = "match_parent"
+            android:layout_height = "match_parent"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp">
+
+        </androidx.recyclerview.widget.RecyclerView>
+    </LinearLayout>
+</FrameLayout>
