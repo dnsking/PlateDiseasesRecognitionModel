@@ -3,3 +3,4 @@
 ################################################################################
 
 /PlateDiseasesRecognitionModel/models/AlexNetModel.hdf5
+/PlateDiseasesRecognitionModel/models/ResNet_plant 97.h5
