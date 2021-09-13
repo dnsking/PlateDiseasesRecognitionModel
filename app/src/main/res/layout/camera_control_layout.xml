@@ -137,7 +137,7 @@
             android:layout_gravity= "left|top"
             android:singleLine="true"
             android:layout_marginLeft="16dp"
-            android:layout_marginTop="308dp"
+            android:layout_marginTop="408dp"
             android:alpha="0"
             />
         <TextView
@@ -149,12 +149,12 @@
             android:textColor     = "#212121"
             android:text          = ""
             android:layout_gravity= "left|top"
-            android:singleLine="true"
+            android:singleLine="false"
             android:layout_marginLeft="16dp"
-            android:layout_marginTop="342dp"
+            android:layout_marginTop="442dp"
             android:alpha="0"
             />
-        <TextView
+        <Button
             android:id="@+id/reportBtnTxView"
             android:layout_width  = "wrap_content"
             android:layout_height = "wrap_content"
@@ -163,10 +163,10 @@
             android:fontFamily      = "sans-serif-medium"
             android:textColor     = "#2196f3"
             android:text          = "Report"
-            android:layout_gravity= "left|bottom"
+            android:layout_gravity= "center|bottom"
             android:singleLine="true"
             android:layout_marginLeft="16dp"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="96dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:alpha="0"

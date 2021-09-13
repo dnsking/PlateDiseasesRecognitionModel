@@ -3,45 +3,58 @@ package com.app.afrifarm;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.util.Pair;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
 import android.content.DialogInterface;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.Point;
 import android.location.Address;
 import android.location.Geocoder;
+import android.location.Location;
+import android.os.Build;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.app.afrifarm.db.AzureCosmosHelper;
 import com.app.afrifarm.db.Disease;
 import com.app.afrifarm.db.DiseaseDbHelper;
+import com.app.afrifarm.db.FetchAll;
+import com.app.afrifarm.networking.AfrifarmNetworkUtils;
 import com.app.afrifarm.utils.Utils;
-import com.google.android.gms.maps.CameraUpdateFactory;
+import com.esri.arcgisruntime.concurrent.ListenableFuture;
+import com.esri.arcgisruntime.geometry.GeometryEngine;
+import com.esri.arcgisruntime.geometry.Point;
+import com.esri.arcgisruntime.geometry.SpatialReferences;
+import com.esri.arcgisruntime.mapping.ArcGISMap;
+import com.esri.arcgisruntime.mapping.BasemapStyle;
+import com.esri.arcgisruntime.mapping.Viewpoint;
+import com.esri.arcgisruntime.mapping.view.DefaultMapViewOnTouchListener;
+import com.esri.arcgisruntime.mapping.view.GraphicsOverlay;
+import com.esri.arcgisruntime.symbology.SimpleLineSymbol;
+import com.esri.arcgisruntime.symbology.SimpleMarkerSymbol;
+import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
+import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.Circle;
-import com.google.android.gms.maps.model.CircleOptions;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polygon;
-import com.google.android.gms.maps.model.PolygonOptions;
+import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.gson.Gson;
-import com.mikepenz.fontawesome_typeface_library.FontAwesome;
+import com.mancj.materialsearchbar.MaterialSearchBar;
+import com.mancj.materialsearchbar.SimpleOnSearchActionListener;
+import com.mancj.materialsearchbar.adapter.SuggestionsAdapter;
 import com.mikepenz.iconics.context.IconicsContextWrapper;
 import com.wisnu.datetimerangepickerandroid.CalendarPickerView;
 
@@ -49,10 +62,12 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutionException;
 
 public class MapActivity extends AppCompatActivity  implements OnMapReadyCallback,View.OnClickListener {
 
@@ -63,6 +78,10 @@ public class MapActivity extends AppCompatActivity  implements OnMapReadyCallbac
     private View mDateBtn;
     private TextView mFirstDateTxtView,mLastDateTxtView;
     private Calendar mFistDate,mLastDate;
+    private com.esri.arcgisruntime.mapping.view.MapView mapView;
+    private Button dateRangeButton;
+    private  MaterialSearchBar searchBar;
+    private ChipGroup chipGroup;
 
     @Override
     protected void attachBaseContext(Context newBase) {
@@ -72,10 +91,27 @@ public class MapActivity extends AppCompatActivity  implements OnMapReadyCallbac
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            //  getWindow().getDecorView().setSystemUiVisibility( View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN|View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+            // edited here
+            getWindow().setStatusBarColor(Color.parseColor("#212121"));
+        }
         setContentView(R.layout.activity_map);
+        chipGroup = findViewById(R.id.chipGroup);
+        chipGroup.setOnCheckedChangeListener(new ChipGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(ChipGroup chipGroup, int i) {
+                if(i==0){
+                    loadAllPoints();
+                }
+                else
+                selectPlant(i-2);
+            }
+        });
 
         Calendar nextYear = Calendar.getInstance();
-        nextYear.add(Calendar.DAY_OF_YEAR, -7);
+        nextYear.add(Calendar.MONTH, -1);
 
         Calendar now = Calendar.getInstance();
 
@@ -85,16 +121,302 @@ public class MapActivity extends AppCompatActivity  implements OnMapReadyCallbac
         mBreakoutListRecyclerView = findViewById(R.id.breakoutListRecyclerView);
         mFirstDateTxtView = findViewById(R.id.firstDateTxtView);
         mLastDateTxtView = findViewById(R.id.lastDateTxtView);
+        dateRangeButton = findViewById(R.id.dateRangeButton);
 
         mFirstDateTxtView.setText(mFistDate.get(Calendar.DAY_OF_MONTH)+" "+mFistDate.getDisplayName(Calendar.MONTH,Calendar.SHORT, Locale.getDefault()));
         mLastDateTxtView.setText(mLastDate.get(Calendar.DAY_OF_MONTH)+" "+mLastDate.getDisplayName(Calendar.MONTH,Calendar.SHORT, Locale.getDefault()));
+
+        dateRangeButton.setText(mFistDate.get(Calendar.DAY_OF_MONTH)+" "+mFistDate.getDisplayName(Calendar.MONTH,Calendar.SHORT, Locale.getDefault())
+        +" - "+mLastDate.get(Calendar.DAY_OF_MONTH)+" "+mLastDate.getDisplayName(Calendar.MONTH,Calendar.SHORT, Locale.getDefault()));
+
+        dateRangeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                MaterialDatePicker dateRangePicker =
+                        MaterialDatePicker.Builder.dateRangePicker()
+                                .setTitleText("Select Dates")
+                                .setSelection(
+                                     new Pair(
+                                                MaterialDatePicker.thisMonthInUtcMilliseconds(),
+                                                MaterialDatePicker.todayInUtcMilliseconds()
+                                        )
+                                )
+                                .build();
+
+                dateRangePicker.show(getSupportFragmentManager(),"t");
+            }
+        });
 
         mDateBtn = findViewById(R.id.dateBtn);
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
         mDateBtn.setOnClickListener(this);
+
+        mapView = findViewById(R.id.mapView);
+         searchBar = findViewById(R.id.searchBar);
+        searchBar.setTextHintColor(Color.parseColor("#424242"));
+        mapView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                return false;
+            }
+        });
+
+        initMaps();
+
+        mapView.setOnTouchListener(new DefaultMapViewOnTouchListener(this, mapView) {
+
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent motionEvent) {
+                android.graphics.Point clickedLocation = new android.graphics.Point(Math.round(motionEvent.getX()),
+                        Math.round(motionEvent.getY()));
+                Point originalPoint = mMapView.screenToLocation(clickedLocation);
+                Point projectedPoint = (Point) GeometryEngine.project(originalPoint, SpatialReferences.getWgs84());
+
+                for (Disease disease :mDiseases) {
+
+                    String[] latlonStr = disease.getLocation().split(",");
+                    com.esri.arcgisruntime.geometry.Point point =
+                            new com.esri.arcgisruntime.geometry.Point(Double.parseDouble(latlonStr[1]),Double.parseDouble(latlonStr[0]), SpatialReferences.getWgs84());
+
+
+                    Location loc1 = new Location("");
+                    loc1.setLatitude(projectedPoint.getY());
+                    loc1.setLongitude(projectedPoint.getX());
+
+                    Location loc2 = new Location("");
+                    loc2.setLatitude(point.getY());
+                    loc2.setLongitude(point.getX());
+
+                    float distanceInMeters = loc1.distanceTo(loc2);
+                    App.Log("setOnTouchListener projectedPoint "+projectedPoint+" point "+point+" distanceInMeters "+distanceInMeters);
+
+
+                if(point.equals(projectedPoint)||distanceInMeters<5000){
+                    showDialog(disease);
+                }
+                }
+
+                return true;
+            }
+        });
+
         //runTest();
+    }
+    private void showDialog(Disease mDe){
+        new MaterialAlertDialogBuilder(this).setTitle(mDe.getPlant())
+                .setMessage(mDe.getName()).setNegativeButton("Call Farmer", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+
+            }
+        }).setPositiveButton("Watch", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+
+            }
+        })
+        .show();
+    }
+    private void init(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+
+                    Gson gson = new Gson();
+                    String data =  AfrifarmNetworkUtils.RunOnAws(new FetchAll());
+                    App.Log("data "+data);
+                    mDiseases=new Gson().fromJson(data,Disease[].class);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            loadAllPoints();
+                        }
+                    });
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+
+            }
+        }).start();
+    }
+    private void selectPlant(int index){
+        App.Log("selectPlant "+index);
+        List<Disease> mDiseasesSelected = new ArrayList<>();
+        for (Disease disease :mDiseases){
+            if(disease.getPlant().equals(
+                    supportedDiseases[index])||
+                    supportedDiseases[index].startsWith(
+                            disease.getPlant())
+            ){
+                mDiseasesSelected.add(disease);
+            }
+        }
+        loadSelectedPoints(mDiseasesSelected);
+    }
+    private void loadSelectedPoints(List<Disease> mDiseases){
+        mapView.getGraphicsOverlays().remove(0);
+        GraphicsOverlay graphicsOverlay = new GraphicsOverlay();
+        mapView.getGraphicsOverlays().add(graphicsOverlay);
+
+        for (Disease disease :mDiseases){
+
+            String[] latlonStr = disease.getLocation().split(",");
+            com.esri.arcgisruntime.geometry.Point point =
+                    new com.esri.arcgisruntime.geometry.Point(Double.parseDouble(latlonStr[1]), Double.parseDouble(latlonStr[0]), SpatialReferences.getWgs84());
+
+            SimpleMarkerSymbol simpleMarkerSymbol =new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.CIRCLE,
+                    Color.parseColor(getColorFromDisease(disease)), 30f);
+
+
+            SimpleLineSymbol blueOutlineSymbol =new SimpleLineSymbol(SimpleLineSymbol.Style.SOLID, Color.parseColor("#212121"), 2f);
+            simpleMarkerSymbol.setOutline(blueOutlineSymbol);
+
+            com.esri.arcgisruntime.mapping.view.Graphic pointGraphic =
+                    new com.esri.arcgisruntime.mapping.view.Graphic(point, simpleMarkerSymbol);
+
+            // add the point graphic to the graphics overlay
+            graphicsOverlay.getGraphics().add(pointGraphic);
+        }
+    }
+    private void loadAllPoints(){
+        GraphicsOverlay graphicsOverlay = new GraphicsOverlay();
+        mapView.getGraphicsOverlays().add(graphicsOverlay);
+
+        for (Disease disease :mDiseases){
+
+            String[] latlonStr = disease.getLocation().split(",");
+            com.esri.arcgisruntime.geometry.Point point =
+                    new com.esri.arcgisruntime.geometry.Point(Double.parseDouble(latlonStr[1]), Double.parseDouble(latlonStr[0]), SpatialReferences.getWgs84());
+
+            SimpleMarkerSymbol simpleMarkerSymbol =new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.CIRCLE,
+                    Color.parseColor(getColorFromDisease(disease)), 30f);
+
+
+            SimpleLineSymbol blueOutlineSymbol =new SimpleLineSymbol(SimpleLineSymbol.Style.SOLID, Color.parseColor("#212121"), 2f);
+            simpleMarkerSymbol.setOutline(blueOutlineSymbol);
+
+            com.esri.arcgisruntime.mapping.view.Graphic pointGraphic =
+                    new com.esri.arcgisruntime.mapping.view.Graphic(point, simpleMarkerSymbol);
+
+            // add the point graphic to the graphics overlay
+            graphicsOverlay.getGraphics().add(pointGraphic);
+        }
+    }
+    private   List<GeocodeResult> locations;
+    private void initMaps(){
+        ArcGISMap map = new ArcGISMap(BasemapStyle.ARCGIS_IMAGERY);
+
+        // set the map to be displayed in the layout's MapView
+        mapView.setMap(map);
+        // set the viewpoint, Viewpoint(latitude, longitude, scale)
+        mapView.setViewpoint(new Viewpoint(
+                -15.364802, 28.339154, CountryScale));
+
+        LocatorTask locatorTask =
+             new LocatorTask("https://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer");
+        // or set an API Key on the Locator Task with locatorTask.setApiKey("YOUR_API_KEY")
+
+        //addPoints(new double[][]{new double[]{-15.364802, 28.339154}});
+        searchBar.setOnSearchActionListener(new SimpleOnSearchActionListener() {
+            @Override
+            public void onSearchConfirmed(CharSequence text) {
+                super.onSearchConfirmed(text);
+            }
+        });
+            searchBar.addTextChangeListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                }
+
+                @Override
+                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                    if(!charSequence.toString().isEmpty()){
+
+                        ListenableFuture<List<GeocodeResult>>  result =locatorTask.geocodeAsync(charSequence.toString());
+                        result.addDoneListener(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    locations =  result.get();
+                                    List<String> locString = new ArrayList<>();
+
+                                    for(int i =0;i<locations.size();i++){
+                                        if(!locString.contains(locations.get(i).getLabel())){
+
+                                            App.Log("Suggestions for "+charSequence+" is "+locations.get(i).getLabel());
+                                            locString.add(locations.get(i).getLabel());
+                                        }
+
+                                    }
+
+                                    searchBar.updateLastSuggestions(locString);
+                                } catch (ExecutionException e) {
+                                    e.printStackTrace();
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+                    }
+                }
+
+                @Override
+                public void afterTextChanged(Editable editable) {
+
+                }
+            });
+        searchBar.setSuggestionsClickListener(new SuggestionsAdapter.OnItemViewClickListener() {
+            @Override
+            public void OnItemClickListener(int i, View view) {
+                searchBar.closeSearch();
+                loadPoint(
+                        locations.get(i));
+            }
+
+            @Override
+            public void OnItemDeleteListener(int i, View view) {
+
+            }
+        });
+
+        init();
+    }
+    private void loadPoint(GeocodeResult point){
+
+        mapView.setViewpoint(new Viewpoint(  point.getDisplayLocation(), DistrictScale));
+    }
+    private double DistrictScale =90000*20;
+    private double CountryScale =DistrictScale*20;
+    private double ContinentScale =CountryScale*5;
+    private void addPoints(double[][] points){
+        GraphicsOverlay graphicsOverlay = new GraphicsOverlay();
+        mapView.getGraphicsOverlays().add(graphicsOverlay);
+
+        for (double[] pointValue :points){
+
+            com.esri.arcgisruntime.geometry.Point point =
+                    new com.esri.arcgisruntime.geometry.Point(pointValue[1], pointValue[0], SpatialReferences.getWgs84());
+
+            SimpleMarkerSymbol simpleMarkerSymbol =new SimpleMarkerSymbol(SimpleMarkerSymbol.Style.CIRCLE, Color.BLACK, 30f);
+
+            SimpleLineSymbol blueOutlineSymbol =new SimpleLineSymbol(SimpleLineSymbol.Style.SOLID, -0xff9c01, 2f);
+            simpleMarkerSymbol.setOutline(blueOutlineSymbol);
+
+            com.esri.arcgisruntime.mapping.view.Graphic pointGraphic =
+                    new com.esri.arcgisruntime.mapping.view.Graphic(point, simpleMarkerSymbol);
+
+            // add the point graphic to the graphics overlay
+            graphicsOverlay.getGraphics().add(pointGraphic);
+            App.Log("Point point "+pointValue);
+        }
+
     }
     public String getAddress(double lat, double lng) {
         Geocoder geocoder = new Geocoder(MapActivity.this, Locale.getDefault());
@@ -133,18 +455,19 @@ public class MapActivity extends AppCompatActivity  implements OnMapReadyCallbac
                     Disease mDisease = new Disease();
                     mDisease.setPlant("Corn");
                     mDisease.setName("Corn Rust");
-                    mDisease.setLocationReported(new double[]{212.12,-121});
-                    mDisease.setDateReported(c.getTimeInMillis());
+                    mDisease.setLocation(212.12+"."+-121);
+                    mDisease.setTime(c.getTimeInMillis());
 
                   //  new DiseaseDbHelper().add( mDisease);
 
+                    /*
                     new DiseaseDbHelper().query(new DiseaseDbHelper.OnAzureActionListener() {
                         @Override
                         public void query(@Nullable List<? extends Disease> results) {
 
                             App.Log("Azure success query "+new Gson().toJson(results.toArray(new Disease[]{})));
                         }
-                    });
+                    });*/
                     App.Log("Azure success");
                 }
                 catch (Exception e){
@@ -160,7 +483,7 @@ public class MapActivity extends AppCompatActivity  implements OnMapReadyCallbac
     }
     private void loadMarkers(Disease mDiseases[]){
         mDiseaseItems = new ArrayList<DiseaseItem>();
-        for(int i=0;i<mDiseases.length;i++){
+      /*  for(int i=0;i<mDiseases.length;i++){
             Disease mDisease = mDiseases[i];
             if(mDisease.getDateReported()>=mFistDate.getTimeInMillis() &&mDisease.getDateReported()<=mLastDate.getTimeInMillis()){
 
@@ -181,7 +504,7 @@ public class MapActivity extends AppCompatActivity  implements OnMapReadyCallbac
 
                 }
             }
-        }
+        }*/
 
 
 
@@ -196,9 +519,9 @@ public class MapActivity extends AppCompatActivity  implements OnMapReadyCallbac
     ,"Corn (maize)","Grape","Orange","Peach","Pepper, bell","Potato","Raspberry"
             ,"Soybean","Squash","Strawberry","Tomato"};
 
-    private String[] supportedDiseasesColors = new String[]{"#f44336","#e91e63","#9c27b0"
-            ,"#673ab7","#2196f3","#00bcd4","#009688","#4caf50","#8bc34a","#cddc39"
-            ,"#ffc107","#ff9800","#ff5722","#795548"};
+    private String[] supportedDiseasesColors = new String[]{"#FAF1DA","#D3EDFF","#D1D2FA"
+            ,"#FFA3A7","#FFBCC8","#BEAAF6","#9292D4","#ADBEEB","#92B5D4","#AAE6F6"
+            ,"#6096BA","#A3CDF1","#AFD9A9","#F2E9BB"};
     private String getColorFromDisease(Disease mDisease){
         for(int i=0;i<supportedDiseases.length;i++) {
             String supportedDisease =supportedDiseases[i];
@@ -210,6 +533,7 @@ public class MapActivity extends AppCompatActivity  implements OnMapReadyCallbac
     }
     private void queryMap(){
 
+        /*
         new DiseaseDbHelper().query(new DiseaseDbHelper.OnAzureActionListener() {
             @Override
             public void query(@Nullable List<? extends Disease> results) {
@@ -223,7 +547,7 @@ public class MapActivity extends AppCompatActivity  implements OnMapReadyCallbac
                 });
             //  App.Log("Azure success query "+new Gson().toJson(results.toArray(new Disease[]{})));
             }
-        });
+        });*/
     }
 
     @Override
@@ -364,7 +688,7 @@ public class MapActivity extends AppCompatActivity  implements OnMapReadyCallbac
             holder.item.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(mDiseaseItem.mDisease.getLocationReported()[0], mDiseaseItem.mDisease.getLocationReported()[1])));
+                //    mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(mDiseaseItem.mDisease.getLocationReported()[0], mDiseaseItem.mDisease.getLocationReported()[1])));
 
                 }
             });

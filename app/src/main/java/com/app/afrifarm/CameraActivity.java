@@ -14,12 +14,14 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.view.ActionMode;
+import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.app.afrifarm.db.Disease;
 import com.app.afrifarm.db.DiseaseDbHelper;
+import com.app.afrifarm.networking.AfrifarmNetworkUtils;
 import com.app.afrifarm.views.CameraControlLayout;
 import com.mikepenz.iconics.context.IconicsContextWrapper;
 
@@ -51,6 +53,11 @@ public class CameraActivity extends AppCompatActivity implements CameraControlLa
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
+        Window g = getWindow();
+        g.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+
         setContentView(R.layout.activity_camera);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         mCameraControlLayout = findViewById(R.id.cameraControlLayout);
@@ -101,7 +108,7 @@ public class CameraActivity extends AppCompatActivity implements CameraControlLa
     private void sendReport(final Disease mDisease){
 
         Calendar c = Calendar.getInstance();
-        mDisease.setDateReported(c.getTimeInMillis());
+        mDisease.setTime(c.getTimeInMillis());
         final ProgressDialog dialog = new ProgressDialog(this);
         dialog.setMessage("Sending Report");
         dialog.setCancelable(false);
@@ -119,14 +126,18 @@ public class CameraActivity extends AppCompatActivity implements CameraControlLa
             double lat = loc.getLatitude();
 
 
-             lon = 28.2235839;
-             lat = -15.5890855;
-            mDisease.setLocationReported(new double[]{lat,lon});
+         //    lon = 28.2235839;
+         //    lat = -15.5890855;
+            mDisease.setLocation(lat+","+lon);
             new Thread(new Runnable() {
                 @Override
                 public void run() {
 
-                    new DiseaseDbHelper().add( mDisease);
+                  //  new DiseaseDbHelper().add( mDisease);
+                    try{
+
+                        AfrifarmNetworkUtils.RunOnAws(mDisease);}
+                    catch (Exception ex){}
                     completeSending( dialog );
                 }
             }).start();
@@ -139,14 +150,19 @@ public class CameraActivity extends AppCompatActivity implements CameraControlLa
                     double lat = loc.getLatitude();
 
 
-                    lon = 28.2235839;
-                    lat = -15.5890855;
-                    mDisease.setLocationReported(new double[]{lat,lon});
+                  //  lon = 28.2235839;
+                   // lat = -15.5890855;
+
+                    mDisease.setLocation(lat+","+lon);
+                 //   mDisease.setLocationReported(new double[]{lat,lon});
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
 
-                            new DiseaseDbHelper().add( mDisease);
+                          //  new DiseaseDbHelper().add( mDisease);
+                            try{
+                                AfrifarmNetworkUtils.RunOnAws(mDisease);}
+                            catch (Exception ex){}
                             completeSending( dialog );
                         }
                     }).start();

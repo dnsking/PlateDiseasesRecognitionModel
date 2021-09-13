@@ -6,6 +6,7 @@ import android.util.Log;
 
 import com.azure.data.AzureData;
 import com.azure.data.model.PermissionMode;
+import com.esri.arcgisruntime.ArcGISRuntimeEnvironment;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
@@ -16,6 +17,8 @@ public class App extends Application {
     public static boolean IsDebug = true;
 
     private static final String TAG = "Afrifarm";
+
+    public static String Url = "";
 
     public static String ModelURL = "";
     public static void Log(String msg){
@@ -39,6 +42,7 @@ public class App extends Application {
 
         super.onCreate();
 
+        ArcGISRuntimeEnvironment.setApiKey("");
 
 
         DisplayImageOptions defaultOptions =  new DisplayImageOptions.Builder()

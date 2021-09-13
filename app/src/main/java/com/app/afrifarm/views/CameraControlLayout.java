@@ -22,6 +22,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -52,7 +53,8 @@ public class CameraControlLayout extends FrameLayout implements View.OnClickList
     private View mCircularImageViewHolder;
     private RecyclerView mImagesRecyclerView;
     private LottieAnimationView mProgressAnimation;
-    private TextView mPlantNameTxView,mDiseaseNameTxView,mCancleBtn,mPleaseWaitTxView,mFindingTxView,mReportBtnTxView;
+    private TextView mPlantNameTxView,mDiseaseNameTxView,mCancleBtn,mPleaseWaitTxView,mFindingTxView;
+    private Button mReportBtnTxView;
 
     private Handler mainHandler;
     public int Showing;
@@ -159,6 +161,7 @@ public class CameraControlLayout extends FrameLayout implements View.OnClickList
 
     }
     private void openCircularImageView(Bitmap bm){
+        mCameraView.pause();
         Showing = Displaying;
        // FontAwesome.Icon.faw_history
      //  Bitmap bm = mCameraView.getBitmap();
@@ -207,7 +210,7 @@ public class CameraControlLayout extends FrameLayout implements View.OnClickList
                 AnimationUtils.getObjectAniOfInt(mCircularImageView,"width",550,new DecelerateInterpolator()
                         ,mCircularImageView.getWidth(),getWidth()-Utils. convertDpToPixelInt(getContext(),32) ),
                 AnimationUtils.getObjectAniOfInt(mCircularImageView,"height",550,new DecelerateInterpolator()
-                        ,mCircularImageView.getHeight(), Utils. convertDpToPixelInt(getContext(),264) ),
+                        ,mCircularImageView.getHeight(), Utils. convertDpToPixelInt(getContext(),364) ),
                 AnimationUtils.getObjectAni(mCircularImageView,"radius",500
                         ,null,mCircularImageView.getRadius(),32),
                 AnimationUtils.getObjectAni(mProgressAnimation,"alpha",200
@@ -229,6 +232,7 @@ public class CameraControlLayout extends FrameLayout implements View.OnClickList
           Toast.makeText(getContext(),"No results found",Toast.LENGTH_SHORT).show();
           closeCircularImageView();
       }
+
     }
     private void runModel(final Bitmap bm){
         new Thread(new Runnable() {
@@ -331,12 +335,7 @@ public class CameraControlLayout extends FrameLayout implements View.OnClickList
         circle.getPaint().setColor(color);
             circle.getPaint().setStyle(Paint.Style.FILL);
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN){
-            view.setBackground(circle);
-        }
-        else{
-            view.setBackgroundDrawable(circle);
-        }
+        view.setBackground(circle);
     }
 
 

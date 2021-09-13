@@ -78,12 +78,7 @@ public class CameraView extends SurfaceView  implements SurfaceHolder.Callback, 
         Camera.Parameters parameters = mCamera.getParameters();
         parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
         mCamera.setParameters(parameters);
-        mCamera.autoFocus(new AutoFocusCallback() {
-            @Override
-            public void onAutoFocus(boolean b, Camera camera) {
 
-            }
-        });
         //mDisplayOrientation = getActivity().getWindowManager().getDefaultDisplay().getRotation();
         mDisplayOrientation = 0;
 
@@ -107,6 +102,13 @@ public class CameraView extends SurfaceView  implements SurfaceHolder.Callback, 
         // empty. Take care of releasing the Camera preview in your activity.
       //  mCamera.stopPreview();
       //  mCamera.release();
+
+        if (mCamera != null) {
+            mCamera.stopPreview();
+            mCamera.release();
+            mCamera = null;
+        }
+
     }
     public void pause(){
         if(mCamera!=null){
@@ -120,6 +122,9 @@ public class CameraView extends SurfaceView  implements SurfaceHolder.Callback, 
     public void resume(){
         initSurface();
         init(getContext());
+        //invalidate();
+
+        mCamera.startPreview();
 
     }
 
@@ -141,6 +146,7 @@ public class CameraView extends SurfaceView  implements SurfaceHolder.Callback, 
             // ignore: tried to stop a non-existent preview
             Log.d(TAG, "Error starting camera preview: " + e.getMessage());
         }
+        mCamera.stopPreview();
 
         int orientation = calculatePreviewOrientation(mCameraInfo, mDisplayOrientation);
         mCamera.setDisplayOrientation(orientation);
